@@ -111,18 +111,37 @@ function addMessage(role, text) {
 }
 
 /* Send the whole conversation to the Worker and show the reply */
-async function askAI() {
-  const thinking = addMessage("assistant", "Thinking…");
+async function askAI(search = false) {
+  const thinking = addMessage("assistant", search ? "Searching the web…" : "Thinking…");
   try {
     const res = await fetch(WORKER_URL, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ messages }),
+      body: JSON.stringify({ messages, search }),
     });
     const data = await res.json();
-    const reply = data.choices[0].message.content;
+    const message = data.choices[0].message;
+    const reply = message.content;
     messages.push({ role: "assistant", content: reply }); // remember history
-    thinking.textContent = reply.replace(/\*\*/g, ""); // ponytail: strip markdown bold; add a markdown lib if richer formatting matters
+    // ponytail: strip markdown bold/links; add a markdown lib if richer formatting matters
+    thinking.textContent = reply.replace(/\*\*/g, "").replace(/\[([^\]]+)\]\([^)]+\)/g, "$1");
+
+    /* Web search answers come with citations: show them as real links */
+    const sources = (message.annotations || []).filter((a) => a.type === "url_citation");
+    if (sources.length) {
+      const list = document.createElement("div");
+      list.className = "sources";
+      list.textContent = "Sources: ";
+      sources.forEach(({ url_citation }) => {
+        const a = document.createElement("a");
+        a.href = url_citation.url;
+        a.textContent = url_citation.title || url_citation.url;
+        a.target = "_blank";
+        a.rel = "noopener";
+        list.appendChild(a);
+      });
+      thinking.appendChild(list);
+    }
   } catch (err) {
     thinking.textContent = "Sorry, something went wrong. Please try again.";
     console.error(err);
@@ -189,7 +208,7 @@ chatForm.addEventListener("submit", (e) => {
   addMessage("user", text);
   messages.push({ role: "user", content: text });
   userInput.value = "";
-  askAI();
+  askAI(document.getElementById("webSearch").checked);
 });
 
 /* Flip the whole page between left-to-right and right-to-left */

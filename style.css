@@ -374,3 +374,25 @@ body {
     margin-top: 8px;
   }
 }
+
+/* web search toggle + citations */
+.web-toggle {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 14px;
+  white-space: nowrap;
+}
+.web-toggle input {
+  accent-color: var(--red);
+}
+.sources {
+  margin-top: 8px;
+  font-size: 13px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 10px;
+}
+.sources a {
+  color: var(--red);
+}
